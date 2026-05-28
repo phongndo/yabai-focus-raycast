@@ -25,6 +25,7 @@ const APP_SEARCH_DIRECTORIES = [
   "/System/Applications/Utilities",
   "/Applications/Utilities",
 ];
+const TITLE_SUFFIX_NOISE_PATTERNS = [/ - Audio playing$/i, / - \d+ new items?$/i];
 
 type ExecResult = {
   stdout: string;
@@ -197,6 +198,27 @@ function sortWindows(windows: YabaiWindow[]): YabaiWindow[] {
 
 function formatCommand(window: YabaiWindow): string {
   return `yabai -m window --focus ${window.id}`;
+}
+
+function formatSubtitle(window: YabaiWindow): string {
+  return compactWindowTitle(window);
+}
+
+function compactWindowTitle(window: YabaiWindow): string {
+  let title = window.title.trim();
+
+  if (!title || title === window.app) {
+    return "";
+  }
+
+  const appSuffix = ` - ${window.app}`;
+  title = title.endsWith(appSuffix) ? title.slice(0, -appSuffix.length).trim() : title;
+
+  for (const pattern of TITLE_SUFFIX_NOISE_PATTERNS) {
+    title = title.replace(pattern, "").trim();
+  }
+
+  return title;
 }
 
 function formatCommandError(error: unknown): string {
@@ -399,7 +421,7 @@ export default function Command() {
           key={window.id}
           icon={iconForWindow(window, appIconsByName)}
           title={window.app}
-          subtitle={`${window.title || "Untitled window"} - Space ${window.space} - Display ${window.display}`}
+          subtitle={formatSubtitle(window) || undefined}
           accessories={accessoriesForWindow(window)}
           keywords={[window.app, window.title, String(window.space)]}
           actions={
