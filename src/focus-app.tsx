@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const USER = process.env.USER || userInfo().username;
 const COMMAND_PATH = `/Users/${USER}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`;
 const EXEC_ENV = { ...process.env, PATH: COMMAND_PATH, USER };
-const STARTUP_REFRESH_DELAYS_MS = [400, 900, 1600];
+const STARTUP_REFRESH_DELAYS_MS = [400, 900, 1600, 3000];
 
 type ExecResult = {
   stdout: string;
