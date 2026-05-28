@@ -1,12 +1,30 @@
-import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Color,
+  getApplications,
+  Icon,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { userInfo } from "node:os";
+import { join } from "node:path";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const USER = process.env.USER || userInfo().username;
 const COMMAND_PATH = `/Users/${USER}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`;
 const EXEC_ENV = { ...process.env, PATH: COMMAND_PATH, USER };
 const STARTUP_REFRESH_DELAYS_MS = [400, 900, 1600, 3000];
+const APP_SEARCH_DIRECTORIES = [
+  "/Applications",
+  `/Users/${USER}/Applications`,
+  "/System/Applications",
+  "/System/Applications/Utilities",
+  "/Applications/Utilities",
+];
 
 type ExecResult = {
   stdout: string;
@@ -16,6 +34,8 @@ type ExecResult = {
 type RefreshOptions = {
   isBackground?: boolean;
 };
+
+type AppIconsByName = Map<string, string>;
 
 class CommandError extends Error {
   code?: string | number;
@@ -199,6 +219,43 @@ async function loadWindows(): Promise<YabaiWindow[]> {
   return sortWindows(parseYabaiWindows(stdout).filter(isFocusableWindow));
 }
 
+function appNameKey(name: string): string {
+  return name.trim().toLocaleLowerCase();
+}
+
+function findAppBundlePath(appName: string): string | undefined {
+  if (!appName || appName.includes("/")) {
+    return undefined;
+  }
+
+  const bundleName = `${appName}.app`;
+
+  for (const directory of APP_SEARCH_DIRECTORIES) {
+    const appPath = join(directory, bundleName);
+
+    if (existsSync(appPath)) {
+      return appPath;
+    }
+  }
+
+  return undefined;
+}
+
+async function loadAppIconsByName(): Promise<AppIconsByName> {
+  const applications = await getApplications();
+  const iconsByName: AppIconsByName = new Map();
+
+  for (const application of applications) {
+    iconsByName.set(appNameKey(application.name), application.path);
+
+    if (application.localizedName) {
+      iconsByName.set(appNameKey(application.localizedName), application.path);
+    }
+  }
+
+  return iconsByName;
+}
+
 async function focusWindow(window: YabaiWindow): Promise<void> {
   const toast = await showToast({
     style: Toast.Style.Animated,
@@ -233,8 +290,22 @@ function accessoriesForWindow(window: YabaiWindow): List.Item.Accessory[] | unde
   return [{ icon: { source: Icon.Dot, tintColor: Color.Green } }];
 }
 
+function iconForWindow(
+  window: YabaiWindow,
+  appIconsByName: AppIconsByName,
+): List.Item.Props["icon"] {
+  const appPath = appIconsByName.get(appNameKey(window.app)) ?? findAppBundlePath(window.app);
+
+  if (!appPath) {
+    return Icon.AppWindow;
+  }
+
+  return { fileIcon: appPath };
+}
+
 export default function Command() {
   const [windows, setWindows] = useState<YabaiWindow[]>([]);
+  const [appIconsByName, setAppIconsByName] = useState<AppIconsByName>(() => new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const isRefreshingRef = useRef(false);
@@ -299,6 +370,22 @@ export default function Command() {
     };
   }, [refresh]);
 
+  useEffect(() => {
+    async function loadAppIcons() {
+      try {
+        setAppIconsByName(await loadAppIconsByName());
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Could not load app icons",
+          message: formatCommandError(error),
+        });
+      }
+    }
+
+    void loadAppIcons();
+  }, []);
+
   const emptyTitle = errorMessage ? "Could not query yabai windows" : "No focusable yabai windows";
   const emptyDescription = errorMessage ?? "Hidden, minimized, and non-AX windows are ignored.";
 
@@ -310,6 +397,7 @@ export default function Command() {
       {items.map((window) => (
         <List.Item
           key={window.id}
+          icon={iconForWindow(window, appIconsByName)}
           title={window.app}
           subtitle={`${window.title || "Untitled window"} - Space ${window.space} - Display ${window.display}`}
           accessories={accessoriesForWindow(window)}
