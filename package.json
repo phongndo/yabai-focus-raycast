@@ -23,7 +23,7 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint src --type-aware --deny-warnings",
     "lsp": "tsc --noEmit",
-    "publish": "npx @raycast/api@latest publish",
+    "publish": "ray publish",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
