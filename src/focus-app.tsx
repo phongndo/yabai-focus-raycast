@@ -225,15 +225,12 @@ async function focusWindow(window: YabaiWindow): Promise<void> {
   }
 }
 
-function iconForWindow(window: YabaiWindow): List.Item.Props["icon"] {
+function accessoriesForWindow(window: YabaiWindow): List.Item.Accessory[] | undefined {
   if (window["has-focus"] !== true) {
     return undefined;
   }
 
-  return {
-    source: Icon.Dot,
-    tintColor: Color.Green,
-  };
+  return [{ icon: { source: Icon.Dot, tintColor: Color.Green } }];
 }
 
 export default function Command() {
@@ -313,9 +310,9 @@ export default function Command() {
       {items.map((window) => (
         <List.Item
           key={window.id}
-          icon={iconForWindow(window)}
           title={window.app}
           subtitle={`${window.title || "Untitled window"} - Space ${window.space} - Display ${window.display}`}
+          accessories={accessoriesForWindow(window)}
           keywords={[window.app, window.title, String(window.space)]}
           actions={
             <ActionPanel>
