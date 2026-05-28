@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const USER = process.env.USER || userInfo().username;
 const COMMAND_PATH = `/Users/${USER}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`;
 const EXEC_ENV = { ...process.env, PATH: COMMAND_PATH, USER };
-const AUTO_REFRESH_INTERVAL_MS = 1500;
+const STARTUP_REFRESH_DELAYS_MS = [400, 900, 1600];
 
 type ExecResult = {
   stdout: string;
@@ -300,12 +300,16 @@ export default function Command() {
   useEffect(() => {
     void refresh();
 
-    const interval = setInterval(() => {
-      void refresh({ isBackground: true });
-    }, AUTO_REFRESH_INTERVAL_MS);
+    const timeouts = STARTUP_REFRESH_DELAYS_MS.map((delay) =>
+      setTimeout(() => {
+        void refresh({ isBackground: true });
+      }, delay),
+    );
 
     return () => {
-      clearInterval(interval);
+      for (const timeout of timeouts) {
+        clearTimeout(timeout);
+      }
     };
   }, [refresh]);
 
