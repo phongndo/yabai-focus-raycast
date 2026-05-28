@@ -442,6 +442,8 @@ export default function Command() {
   const pendingRefreshRef = useRef<RefreshOptions | undefined>(undefined);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
       isMountedRef.current = false;
     };
