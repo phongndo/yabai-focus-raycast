@@ -25,6 +25,7 @@ const APP_SEARCH_DIRECTORIES = [
   "/System/Applications/Utilities",
   "/Applications/Utilities",
 ];
+const IGNORED_APP_NAMES = new Set(["raycast"]);
 const TITLE_SUFFIX_NOISE_PATTERNS = [/ - Audio playing$/i, / - \d+ new items?$/i];
 
 type ExecResult = {
@@ -168,7 +169,12 @@ function parseYabaiWindows(stdout: string): YabaiWindow[] {
 }
 
 function isFocusableWindow(window: YabaiWindow): boolean {
-  return !window["is-minimized"] && !window["is-hidden"] && window["has-ax-reference"] === true;
+  return (
+    !IGNORED_APP_NAMES.has(appNameKey(window.app)) &&
+    !window["is-minimized"] &&
+    !window["is-hidden"] &&
+    window["has-ax-reference"] === true
+  );
 }
 
 function sortWindows(windows: YabaiWindow[]): YabaiWindow[] {

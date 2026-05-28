@@ -1,35 +1,28 @@
 # Yabai Focus
 
-Local Raycast extension for fuzzy-searching currently open yabai windows and focusing the selected window.
+Search open `yabai` windows from Raycast and focus the selected app or window.
 
-It is built for macOS setups that use `yabai` for window focus and want an `alt-space` app/window switcher without replacing existing `skhd` fixed app hotkeys.
+Yabai Focus is built for macOS users who already use `yabai` for window management and want a fast app/window switcher without replacing their existing `skhd` shortcuts.
 
-## Command
+## Features
 
-- `Focus App`: queries `yabai -m query --windows`, lists focusable windows, and focuses the selected window with `yabai -m window --focus <window-id>`.
-- Hidden, minimized, and non-AX windows are ignored.
-- When the command opens, it performs a few quiet follow-up queries in the first few seconds so apps/windows opened at the same time can appear without reopening Raycast.
-- If yabai focus fails, the command falls back to `open -a <app-name>`.
-
-## Setup
-
-```sh
-npm install
-npm run dev
-```
-
-Raycast imports the local extension when `npm run dev` starts. After that, the command remains available from Raycast root search.
-
-## Hotkey
-
-In Raycast Settings -> Extensions, select `Focus App` and record `Option-Space` as the command hotkey.
+- Lists focusable windows from `yabai -m query --windows`.
+- Shows app icons when Raycast can resolve the macOS application bundle.
+- Keeps multiple windows from the same app as separate results.
+- Excludes Raycast's own command palette from results.
+- Deprioritizes the currently focused window so switching targets are easier to reach.
+- Focuses the selected window with `yabai -m window --focus <window-id>`.
+- Falls back to `open -a <app-name>` if `yabai` cannot focus the window.
+- Refreshes shortly after opening so newly launched apps can appear without reopening Raycast.
 
 ## Requirements
 
-- `yabai` must be installed and running.
-- `yabai` needs macOS Accessibility permissions.
-- Raycast may also need Accessibility permissions so the focused app/window switch is allowed by macOS.
-- The extension searches for binaries with this PATH:
+- macOS.
+- `yabai` installed and running.
+- macOS Accessibility permission granted to `yabai`.
+- macOS Accessibility permission granted to Raycast if window focus is blocked.
+
+The extension searches for command-line tools on this path:
 
 ```text
 /Users/${USER}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
@@ -37,32 +30,37 @@ In Raycast Settings -> Extensions, select `Focus App` and record `Option-Space` 
 
 ## Usage
 
-1. Press the configured hotkey.
-2. Type part of an app or window title.
-3. Press Enter to focus the selected yabai window.
+1. Open Raycast.
+2. Run `Focus App`.
+3. Search by app name or window title.
+4. Press `Return` to focus the selected window.
 
 The action panel also includes:
 
-- `Refresh` with `Cmd-R`.
-- `Copy Yabai Focus Command` with `Cmd-.`.
+- `Focus Window`
+- `Copy Yabai Focus Command` with `Cmd-.`
+- `Refresh` with `Cmd-R`
 
-## Checks
+## Local Development
 
 ```sh
-npm run format:check
-npm run lsp
-npm run lint
-npm run build
+npm install
+npm run dev
 ```
 
-CI runs the same checks with:
+Raycast imports the local extension when development mode starts. The command remains available from Raycast root search while the development server is running.
+
+## Release Checks
 
 ```sh
 npm run ci
+npm run publish
 ```
+
+`npm run ci` runs formatting, TypeScript diagnostics, lint, and the Raycast distribution build. `npm run publish` starts Raycast's public Store submission flow.
 
 ## Troubleshooting
 
-- If the list is empty, confirm the window is not hidden, minimized, or missing an Accessibility reference in yabai.
-- If Raycast cannot find `yabai`, verify it is installed in one of the PATH directories above.
-- If focusing fails, confirm both yabai and Raycast have macOS Accessibility permissions.
+- Empty list: confirm the target window is not hidden, minimized, or missing an Accessibility reference in `yabai`.
+- `yabai` not found: confirm `yabai` is installed in one of the PATH directories listed above.
+- Focus fails: confirm both `yabai` and Raycast have Accessibility permission in macOS Settings.
