@@ -1,0 +1,43 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "yabai-focus",
+  "description": "Search and focus open yabai windows/apps",
+  "categories": [
+    "Productivity",
+    "System"
+  ],
+  "license": "MIT",
+  "author": "dp",
+  "scripts": {
+    "build": "ray build -e dist",
+    "ci": "npm run format:check && npm run lsp && npm run lint && npm run build",
+    "dev": "ray develop",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint src --type-aware --deny-warnings",
+    "lsp": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@raycast/api": "1.104.18"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
+    "oxfmt": "^0.52.0",
+    "oxlint": "^1.67.0",
+    "oxlint-tsgolint": "^0.23.0",
+    "react-devtools": "6.1.1",
+    "typescript": "6.0.3"
+  },
+  "icon": "icon.png",
+  "commands": [
+    {
+      "name": "focus-app",
+      "title": "Focus App",
+      "description": "Search and focus open yabai windows/apps",
+      "mode": "view"
+    }
+  ],
+  "title": "Yabai Focus"
+}
