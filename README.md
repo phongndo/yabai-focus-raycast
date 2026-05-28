@@ -8,6 +8,7 @@ It is built for macOS setups that use `yabai` for window focus and want an `alt-
 
 - `Focus App`: queries `yabai -m query --windows`, lists focusable windows, and focuses the selected window with `yabai -m window --focus <window-id>`.
 - Hidden, minimized, and non-AX windows are ignored.
+- While the command is open, it refreshes the yabai window list in the background so newly opened apps/windows appear without reopening Raycast.
 - If yabai focus fails, the command falls back to `open -a <app-name>`.
 
 ## Setup

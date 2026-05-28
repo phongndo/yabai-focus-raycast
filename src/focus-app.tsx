@@ -1,15 +1,20 @@
 import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
 import { execFile } from "node:child_process";
 import { userInfo } from "node:os";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const USER = process.env.USER || userInfo().username;
 const COMMAND_PATH = `/Users/${USER}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`;
 const EXEC_ENV = { ...process.env, PATH: COMMAND_PATH, USER };
+const AUTO_REFRESH_INTERVAL_MS = 1500;
 
 type ExecResult = {
   stdout: string;
   stderr: string;
+};
+
+type RefreshOptions = {
+  isBackground?: boolean;
 };
 
 class CommandError extends Error {
@@ -246,16 +251,25 @@ export default function Command() {
   const [windows, setWindows] = useState<YabaiWindow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const isRefreshingRef = useRef(false);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(undefined);
+  const refresh = useCallback(async ({ isBackground = false }: RefreshOptions = {}) => {
+    if (isRefreshingRef.current) {
+      return;
+    }
+
+    isRefreshingRef.current = true;
+
+    if (!isBackground) {
+      setIsLoading(true);
+    }
 
     try {
       const nextWindows = await loadWindows();
       setWindows(nextWindows);
+      setErrorMessage(undefined);
 
-      if (nextWindows.length === 0) {
+      if (nextWindows.length === 0 && !isBackground) {
         await showToast({
           style: Toast.Style.Failure,
           title: "No focusable yabai windows",
@@ -264,20 +278,35 @@ export default function Command() {
       }
     } catch (error) {
       const message = formatCommandError(error);
-      setWindows([]);
       setErrorMessage(message);
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Could not query yabai windows",
-        message,
-      });
+
+      if (!isBackground) {
+        setWindows([]);
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Could not query yabai windows",
+          message,
+        });
+      }
     } finally {
-      setIsLoading(false);
+      isRefreshingRef.current = false;
+
+      if (!isBackground) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void refresh();
+
+    const interval = setInterval(() => {
+      void refresh({ isBackground: true });
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [refresh]);
 
   const emptyTitle = errorMessage ? "Could not query yabai windows" : "No focusable yabai windows";
