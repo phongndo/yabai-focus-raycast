@@ -44,8 +44,8 @@ The action panel also includes:
 ## Local Development
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Raycast imports the local extension when development mode starts. The command remains available from Raycast root search while the development server is running.
@@ -53,11 +53,11 @@ Raycast imports the local extension when development mode starts. The command re
 ## Release Checks
 
 ```sh
-npm run ci
-npm run publish
+pnpm run ci
+pnpm run publish
 ```
 
-`npm run ci` runs formatting, TypeScript diagnostics, lint, and the Raycast distribution build. `npm run publish` starts Raycast's public Store submission flow.
+`pnpm run ci` runs formatting, TypeScript diagnostics, lint, and the Raycast distribution build. `pnpm run publish` starts Raycast's public Store submission flow.
 
 ## Troubleshooting
 

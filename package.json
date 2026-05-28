@@ -17,7 +17,7 @@
   "author": "phongndo69",
   "scripts": {
     "build": "ray build -e dist",
-    "ci": "npm run format:check && npm run lsp && npm run lint && npm run build",
+    "ci": "pnpm run format:check && pnpm run lsp && pnpm run lint && pnpm run build",
     "dev": "ray develop",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
@@ -38,6 +38,7 @@
     "typescript": "6.0.3"
   },
   "icon": "icon.png",
+  "packageManager": "pnpm@11.4.0",
   "commands": [
     {
       "name": "focus-app",
