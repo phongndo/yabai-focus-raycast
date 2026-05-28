@@ -14,7 +14,7 @@
     "yabai"
   ],
   "license": "MIT",
-  "author": "ph8n",
+  "author": "phongndo69",
   "scripts": {
     "build": "ray build -e dist",
     "ci": "npm run format:check && npm run lsp && npm run lint && npm run build",
