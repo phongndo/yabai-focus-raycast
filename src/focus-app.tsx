@@ -415,7 +415,7 @@ async function loadWindows(): Promise<WindowSnapshot> {
   const allWindows = parseYabaiWindows(stdout);
   const focusableWindows = allWindows.filter(isFocusableWindow);
   const focusedAppKey =
-    (await frontmostAppKeyForWindows(focusableWindows)) ?? focusedAppKeyForWindows(allWindows);
+    focusedAppKeyForWindows(allWindows) ?? (await frontmostAppKeyForWindows(focusableWindows));
   const windows = sortWindows(focusableWindows, focusedAppKey);
   const focusedAppName = windows.find((window) => isFocusedAppWindow(window, focusedAppKey))?.app;
 
@@ -534,12 +534,15 @@ export default function Command() {
   useEffect(() => {
     isMountedRef.current = true;
     void clearSearchBar({ forceScrollToTop: true });
-    void updateCommandMetadata({ subtitle: null });
 
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    void updateCommandMetadata({ subtitle: focusedAppName ?? null });
+  }, [focusedAppName]);
 
   const refresh = useCallback(async function refreshWindows({
     isBackground = false,
@@ -691,17 +694,21 @@ export default function Command() {
     return fallbackPaths;
   }, [appIconsByName, windows]);
 
-  const focusSelectedWindow = useCallback(async (window: YabaiWindow) => {
-    setSearchText("");
+  const focusSelectedWindow = useCallback(
+    async (window: YabaiWindow) => {
+      setSearchText("");
 
-    try {
-      await clearSearchBar({ forceScrollToTop: true });
-    } catch {
-      // Keep focusing usable even if Raycast cannot clear the search bar.
-    }
+      try {
+        await clearSearchBar({ forceScrollToTop: true });
+      } catch {
+        // Keep focusing usable even if Raycast cannot clear the search bar.
+      }
 
-    await focusWindow(window);
-  }, []);
+      await focusWindow(window);
+      void refresh({ isBackground: true });
+    },
+    [refresh],
+  );
 
   const renderWindowItem = (
     window: YabaiWindow,
