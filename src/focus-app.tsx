@@ -296,18 +296,7 @@ function focusedAppKeyForWindows(windows: YabaiWindow[]): string | undefined {
     return appNameKey(focusedWindow.app);
   }
 
-  const focusedIgnoredWindowIndex = windows.findIndex(
-    (window) => window["has-focus"] === true && IGNORED_APP_NAMES.has(appNameKey(window.app)),
-  );
-  if (focusedIgnoredWindowIndex === -1) {
-    return undefined;
-  }
-
-  const previousFocusedWindow = windows
-    .slice(focusedIgnoredWindowIndex + 1)
-    .find(isFocusableWindow);
-
-  return previousFocusedWindow ? appNameKey(previousFocusedWindow.app) : undefined;
+  return undefined;
 }
 
 function isFocusedAppWindow(window: YabaiWindow, focusedAppKey: string | undefined): boolean {
