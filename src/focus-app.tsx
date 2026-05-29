@@ -59,7 +59,6 @@ type AppIconFallbacksByName = Map<string, string | undefined>;
 type WindowSnapshot = {
   windows: YabaiWindow[];
   focusedAppKey?: string;
-  focusedAppName?: string;
 };
 type WindowGroups = {
   unfocusedWindows: YabaiWindow[];
@@ -414,12 +413,12 @@ async function loadWindows(): Promise<WindowSnapshot> {
   const { stdout } = await runYabai(["-m", "query", "--windows"]);
   const allWindows = parseYabaiWindows(stdout);
   const focusableWindows = allWindows.filter(isFocusableWindow);
-  const frontmostAppKey = await frontmostAppKeyForWindows(focusableWindows);
-  const focusedAppKey = frontmostAppKey ?? focusedAppKeyForWindows(focusableWindows);
+  const focusedAppKey =
+    focusedAppKeyForWindows(focusableWindows) ??
+    (await frontmostAppKeyForWindows(focusableWindows));
   const windows = sortWindows(focusableWindows, focusedAppKey);
-  const focusedAppName = windows.find((window) => isFocusedAppWindow(window, focusedAppKey))?.app;
 
-  return { windows, focusedAppKey, focusedAppName };
+  return { windows, focusedAppKey };
 }
 
 async function frontmostAppKeyForWindows(windows: YabaiWindow[]): Promise<string | undefined> {
@@ -478,7 +477,7 @@ async function loadAppIconsByName(): Promise<AppIconsByName> {
   return iconsByName;
 }
 
-async function focusWindow(window: YabaiWindow): Promise<void> {
+async function focusWindow(window: YabaiWindow): Promise<boolean> {
   const toast = await showToast({
     style: Toast.Style.Animated,
     title: `Focusing ${window.app}`,
@@ -490,16 +489,19 @@ async function focusWindow(window: YabaiWindow): Promise<void> {
     toast.style = Toast.Style.Success;
     toast.title = `Focused ${window.app}`;
     toast.message = window.title || `Window ${window.id}`;
+    return true;
   } catch (focusError) {
     try {
       await runOpen(["-a", window.app]);
       toast.style = Toast.Style.Success;
       toast.title = `Opened ${window.app}`;
       toast.message = `Yabai focus failed: ${formatCommandError(focusError)}`;
+      return true;
     } catch (openError) {
       toast.style = Toast.Style.Failure;
       toast.title = `Could not focus ${window.app}`;
       toast.message = `${formatCommandError(focusError)}; fallback failed: ${formatCommandError(openError)}`;
+      return false;
     }
   }
 }
@@ -522,7 +524,6 @@ function iconForWindow(
 export default function Command() {
   const [windows, setWindows] = useState<YabaiWindow[]>([]);
   const [focusedAppKey, setFocusedAppKey] = useState<string>();
-  const [focusedAppName, setFocusedAppName] = useState<string>();
   const [appIconsByName, setAppIconsByName] = useState<AppIconsByName>(() => new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -541,8 +542,8 @@ export default function Command() {
   }, []);
 
   useEffect(() => {
-    void updateCommandMetadata({ subtitle: focusedAppName ?? null });
-  }, [focusedAppName]);
+    void updateCommandMetadata({ subtitle: null });
+  }, []);
 
   const refresh = useCallback(async function refreshWindows({
     isBackground = false,
@@ -576,11 +577,6 @@ export default function Command() {
           ? currentFocusedAppKey
           : nextWindowSnapshot.focusedAppKey,
       );
-      setFocusedAppName((currentFocusedAppName) =>
-        currentFocusedAppName === nextWindowSnapshot.focusedAppName
-          ? currentFocusedAppName
-          : nextWindowSnapshot.focusedAppName,
-      );
       setErrorMessage((currentErrorMessage) =>
         currentErrorMessage === undefined ? currentErrorMessage : undefined,
       );
@@ -602,9 +598,6 @@ export default function Command() {
       setWindows((currentWindows) => (currentWindows.length === 0 ? currentWindows : []));
       setFocusedAppKey((currentFocusedAppKey) =>
         currentFocusedAppKey === undefined ? currentFocusedAppKey : undefined,
-      );
-      setFocusedAppName((currentFocusedAppName) =>
-        currentFocusedAppName === undefined ? currentFocusedAppName : undefined,
       );
       if (!isBackground) {
         await showToast({
@@ -704,7 +697,12 @@ export default function Command() {
         // Keep focusing usable even if Raycast cannot clear the search bar.
       }
 
-      await focusWindow(window);
+      const didFocusWindow = await focusWindow(window);
+
+      if (didFocusWindow && isMountedRef.current) {
+        setFocusedAppKey(appNameKey(window.app));
+      }
+
       void refresh({ isBackground: true });
     },
     [refresh],
@@ -749,7 +747,7 @@ export default function Command() {
   return (
     <List
       isLoading={isLoading}
-      navigationTitle={focusedAppName ?? "Focus App"}
+      navigationTitle="Focus App"
       searchBarPlaceholder="Search yabai windows/apps"
       searchText={searchText}
       filtering
