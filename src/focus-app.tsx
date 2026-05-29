@@ -414,8 +414,8 @@ async function loadWindows(): Promise<WindowSnapshot> {
   const { stdout } = await runYabai(["-m", "query", "--windows"]);
   const allWindows = parseYabaiWindows(stdout);
   const focusableWindows = allWindows.filter(isFocusableWindow);
-  const focusedAppKey =
-    focusedAppKeyForWindows(allWindows) ?? (await frontmostAppKeyForWindows(focusableWindows));
+  const frontmostAppKey = await frontmostAppKeyForWindows(focusableWindows);
+  const focusedAppKey = frontmostAppKey ?? focusedAppKeyForWindows(focusableWindows);
   const windows = sortWindows(focusableWindows, focusedAppKey);
   const focusedAppName = windows.find((window) => isFocusedAppWindow(window, focusedAppKey))?.app;
 
